@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Directory</title>
+    <style>
+        .butn{
+            margin-left: 20px;
+        }
+        .title{
+            text-align: center;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: 20px auto;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box; 
+        }
+
+        button {
+            background-color: #5c67f2;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #4a54e1;
+        }
+
+        #booksList {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0;
+        }
+
+        #booksList li {
+            list-style: none;
+            margin-top: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .book-actions {
+            margin-top: 10px;
+            width: 60px;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">Book Directory</h1>
+    <h2>Add Book</h2>
+    <form id="bookForm">
+        <input type="text" name="title" placeholder="Title" required>
+        <input type="text" name="author" placeholder="Author" required>
+        <input type="number" name="year" placeholder="Year" required>
+        <button type="submit">Add Book</button>
+    </form>
+
+    <h2>Books List</h2>
+    <ul id="booksList"></ul>
+
+    <script>
+        const form = document.querySelector('#bookForm');
+        const booksList = document.querySelector('#booksList');
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            const response = await fetch('/books', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            if (response.ok) {
+                console.log('Book added');
+                form.reset();
+                fetchBooks(); 
+            } else {
+                console.error('Failed to add book');
+            }
+        };
+
+        async function fetchBooks() {
+            const response = await fetch('/books');
+            const books = await response.json();
+            booksList.innerHTML = '';
+            books.forEach(book => {
+                const bookItem = document.createElement('li');
+                bookItem.innerHTML = `
+                    <b>Title : </b> ${book.title}, <b>Author : </b> ${book.author}, <b>Year : </b> ${book.year}
+                    <div class="book-actions">
+                        <button onclick="deleteBook(${book.id})" class = "butn">Delete</button>
+                        <button onclick="updateBook(${book.id}, '${book.title}', '${book.author}', ${book.year})" class = "butn">Update</button>
+                    </div>
+                `;
+                booksList.appendChild(bookItem);
+            });
+        }
+
+        async function deleteBook(id) {
+            const response = await fetch('/books/' + id, { method: 'DELETE' });
+            if (response.ok) {
+                console.log('Book deleted');
+                fetchBooks(); 
+            } else {
+                console.error('Failed to delete book');
+            }
+        }
+
+        async function updateBook(id, title, author, year) {
+    const newTitle = prompt("Enter new title", title);
+    if (newTitle === null) return;  // User cancelled the prompt
+
+    const newAuthor = prompt("Enter new author", author);
+    if (newAuthor === null) return; 
+
+    const newYear = prompt("Enter new year", year);
+    if (newYear === null) return;  
+
+    const data = { title: newTitle, author: newAuthor, year: newYear };
+    const response = await fetch('/books/' + id, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+        console.log('Book updated');
+        fetchBooks();  // Refresh the books list
+    } else {
+        console.error('Failed to update book');
+    }
+}
+
+
+        fetchBooks();
+    </script>
+</body>
+</html>
